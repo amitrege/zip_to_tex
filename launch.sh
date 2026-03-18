@@ -8,10 +8,10 @@ usage() {
   cat <<EOF
 Usage: ./launch.sh /absolute/or/relative/path/to/paper.zip|paper.tar.gz [zip-to-tex options]
 
-Moves the archive into this repo directory, runs the flatten/compile pipeline here,
-and leaves the final <archive_stem>_flat/ output folder in this directory.
-By default this launcher skips PDF compilation and produces the flattened .tex.
-Pass --compile if you also want to try building the PDF.
+Moves the archive into this repo folder, runs the pipeline here,
+and leaves the final <archive_stem>_flat/ output folder behind.
+By default it skips PDF compilation and just gives you the flattened .tex.
+Pass --compile if you want it to try a PDF too.
 
 Examples:
   ./launch.sh ~/Downloads/1234.56789v1.zip

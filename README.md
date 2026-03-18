@@ -1,55 +1,97 @@
 # zip_to_tex
 
-`zip_to_tex` takes an arXiv-style source archive, safely extracts it, finds the most likely main LaTeX document, flattens the include tree into one generated `.tex` file, compiles it, and keeps only the flattened output directory on success.
+This repo is for a pretty specific job: you grab the source archive for a paper from arXiv, drop it into this workflow, and it gives you one flattened `.tex` file instead of a pile of nested `\input{}` files.
+
+I mostly built it for the annoying cases where a paper has `main.tex`, `macros.tex`, section files, figures, random style files, and you just want one top-level tex file you can inspect or pass around without digging through the whole tree.
 
 ## What it does
 
-- Accepts a single source `.zip`, `.tar.gz`, or `.tgz` archive at a time.
-- Rejects unsafe archive entries such as path traversal members or symlinks.
-- Detects the most likely root document and falls back to other viable roots if the first candidate does not compile.
-- Inlines common TeX include commands into one generated file.
-- Copies figures, bibliography files, class/style files, and other non-TeX support assets needed to recompile.
-- Compiles with `pdflatex`, `xelatex`, or `lualatex`, with automatic engine detection by default.
-- Deletes the original archive and temporary extraction directory only after a successful build.
+- takes an arXiv source archive: `.zip`, `.tar.gz`, or `.tgz`
+- unpacks it safely
+- tries to figure out which `.tex` file is the real entry point
+- pulls the included tex files into one flattened output file
+- keeps the assets that still matter, like figures, `.bib`, `.sty`, and friends
+- by default, skips PDF compilation and just gives you the flattened tex
+- if you want, you can still tell it to try a PDF build
+
+## The normal way to use it
+
+From this repo folder:
+
+```bash
+./launch.sh /path/to/paper.tar.gz
+```
+
+or
+
+```bash
+./launch.sh /path/to/paper.zip
+```
+
+That script does a few things for you:
+
+- moves the archive into this repo folder with `mv` instead of copying it
+- runs the flattening pipeline here
+- removes the original archive after a successful run
+- leaves you with a folder like `papername_flat/`
+
+Inside that output folder you’ll usually see:
+
+- `papername_flat.tex`
+- figures and other support files the flattened tex still needs
+- optionally a PDF, if you asked it to compile
+
+## If you want PDF compilation too
+
+The launcher skips compilation by default, because real-world paper sources are messy and missing TeX packages gets old fast.
+
+If you still want it to take a shot at the PDF:
+
+```bash
+./launch.sh /path/to/paper.tar.gz --compile
+```
+
+If the compile step blows up, the tool keeps the temp folder around so you can inspect the LaTeX log and the generated flat file.
+
+## You can also run the Python entrypoint directly
+
+```bash
+env PYTHONPATH=src python3 -m zip_to_tex /path/to/paper.tar.gz --no-compile
+```
+
+Some useful flags:
+
+- `--no-compile` keeps it tex-only
+- `--compile` tries to build a PDF
+- `--engine xelatex` or `--engine lualatex` if you want to force an engine
+- `--output-root /some/folder` if you want the result somewhere else
+- `--max-runs 6` if you want more LaTeX passes during compilation
+
+## What this repo is good for
+
+- reading a paper source tree without chasing imports all over the place
+- handing someone one main tex file instead of a whole archive
+- making it easier to inspect macros, sections, and figure references in one place
+- getting a cleaner starting point before doing your own edits
+
+## What it does not magically solve
+
+- weird custom TeX macros that build file paths dynamically
+- every possible LaTeX package setup on earth
+- source trees that rely on shell escape or very custom build steps
+- papers that are technically compilable but only in a very particular local setup
+
+So the safe expectation is: this should do a good job flattening normal arXiv paper sources, but PDF compilation is still best-effort.
 
 ## Install
+
+If you want the Python entrypoint available directly:
 
 ```bash
 python3 -m pip install -e .
 ```
 
-## Usage
-
-```bash
-zip-to-tex path/to/paper.zip
-zip-to-tex path/to/paper.tar.gz
-```
-
-Repo-local launcher:
-
-```bash
-./launch.sh /path/to/paper.zip
-./launch.sh /path/to/paper.tar.gz
-```
-
-That script moves the archive into this repo directory with `mv`, runs the pipeline here, and leaves the final `<archive_stem>_flat/` output folder in this directory. By default it skips PDF compilation and just emits the flattened `.tex` plus support assets. Pass `--compile` if you want it to try building the PDF too.
-
-Optional flags:
-
-```bash
-zip-to-tex paper.zip --output-root out --engine auto --max-runs 5
-zip-to-tex paper.tar.gz --no-compile
-```
-
-Successful runs create a folder named `<zip_stem>_flat/` under the output root. That folder contains:
-
-- `<zip_stem>_flat.tex`
-- `<zip_stem>_flat.pdf`
-- supporting assets such as figures, `.bib`, `.bbl`, `.bst`, `.cls`, and `.sty`
-
-The tool fails safely when it cannot determine a usable root, flatten a dynamic include path, or complete compilation.
-
-## Test
+## Tests
 
 ```bash
 env PYTHONPATH=src python3 -m unittest discover -s tests -v
