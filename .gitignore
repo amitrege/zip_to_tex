@@ -1,0 +1,16 @@
+.pytest_cache/
+.venv/
+__pycache__/
+build/
+dist/
+*.egg-info/
+*.aux
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
